@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ContactRole, User, UserKind } from "../src/models/user.ts";
-import { canListOffers, hasContactRole, isAdmin } from "../src/services/permissions.ts";
+import { canListOffers, canManageOffer, canReviewOffers, hasContactRole, isAdmin } from "../src/services/permissions.ts";
 
 const user = (kind: UserKind, roles: ContactRole[] = []): User => ({
   kind,
@@ -31,5 +31,23 @@ describe("règles d'accès", () => {
     ["un promoteur et signataire", user("CONTACT", ["PROMOTER", "SIGNATORY"]), false],
   ])("autorise la consultation des offres pour %s : %s", (_profile, viewer, expected) => {
     expect(canListOffers(viewer)).toBe(expected);
+  });
+
+  it.each([
+    ["un administrateur", user("ADMIN"), true],
+    ["un déposant", user("CONTACT", ["DEPOSITOR"]), true],
+    ["un étudiant", user("STUDENT"), false],
+    ["un promoteur et signataire", user("CONTACT", ["PROMOTER", "SIGNATORY"]), false],
+  ])("autorise la gestion d'une offre pour %s : %s", (_profile, viewer, expected) => {
+    expect(canManageOffer(viewer)).toBe(expected);
+  });
+
+  it.each([
+    ["un administrateur", user("ADMIN"), true],
+    ["un déposant", user("CONTACT", ["DEPOSITOR"]), false],
+    ["un étudiant", user("STUDENT"), false],
+    ["un promoteur et signataire", user("CONTACT", ["PROMOTER", "SIGNATORY"]), false],
+  ])("autorise la validation des offres pour %s : %s", (_profile, viewer, expected) => {
+    expect(canReviewOffers(viewer)).toBe(expected);
   });
 });
