@@ -97,3 +97,77 @@ describe("GET /offers : visibilité selon le profil", () => {
     );
   });
 });
+
+describe("offres : cycle de vie", () => {
+  it("crée une offre pour un déposant et la met à jour", async () => {
+    const createResponse = await request(app)
+      .post("/offers")
+      .set("Authorization", tokenFor("CONTACT", CONTACT.MARC_LEJEUNE))
+      .send({
+        companyId: 4,
+        depositorContactId: CONTACT.MARC_LEJEUNE,
+        promoterContactId: null,
+        academicYearId: 2,
+        periodId: 5,
+        title: "Nouvelle offre test",
+        description: "Description test",
+      });
+
+    expect(createResponse.status).toBe(201);
+    expect(createResponse.body.title).toBe("Nouvelle offre test");
+    expect(createResponse.body.status).toBe("SUBMITTED");
+
+    const id = createResponse.body.id;
+    const updateResponse = await request(app)
+      .patch(`/offers/${id}`)
+      .set("Authorization", tokenFor("CONTACT", CONTACT.MARC_LEJEUNE))
+      .send({
+        companyId: 4,
+        depositorContactId: CONTACT.MARC_LEJEUNE,
+        promoterContactId: null,
+        academicYearId: 2,
+        periodId: 5,
+        title: "Nouvelle offre test mise à jour",
+        description: "Description test mise à jour",
+      });
+
+    expect(updateResponse.status).toBe(200);
+    expect(updateResponse.body.title).toBe("Nouvelle offre test mise à jour");
+  });
+
+  it("accepte une validation admin et refuse la suppression d'une offre liée à un stage", async () => {
+    const adminToken = tokenFor("ADMIN", ADMINISTRATOR.ANNE_LECLERCQ);
+    const publishedResponse = await request(app)
+      .patch(`/offers/${OFFER.CLOUD_MIGRATION}/status`)
+      .set("Authorization", adminToken)
+      .send({ status: "PUBLISHED" });
+
+    expect(publishedResponse.status).toBe(200);
+    expect(publishedResponse.body.status).toBe("PUBLISHED");
+
+    const deleteResponse = await request(app)
+      .delete(`/offers/${OFFER.CLOUD_MIGRATION}`)
+      .set("Authorization", adminToken);
+
+    expect(deleteResponse.status).toBe(400);
+    expect(deleteResponse.body.error.code).toBe("INVALID_BODY");
+  });
+
+  it("refuse la modification à un déposant qui ne détient pas l'offre", async () => {
+    const response = await request(app)
+      .patch(`/offers/${OFFER.BILLING_API}`)
+      .set("Authorization", tokenFor("CONTACT", CONTACT.CLAIRE_DUMONT))
+      .send({
+        companyId: 4,
+        depositorContactId: CONTACT.CLAIRE_DUMONT,
+        promoterContactId: null,
+        academicYearId: 2,
+        periodId: 5,
+        title: "Tentative de modification",
+        description: "Interdit",
+      });
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("FORBIDDEN");
+  });
+});

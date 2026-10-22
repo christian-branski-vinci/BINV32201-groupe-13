@@ -168,3 +168,75 @@ récente à la plus ancienne, puis de la plus récente à la plus ancienne.
 
 - `401` `UNAUTHENTICATED` : session absente ou invalide.
 - `403` `FORBIDDEN` : contact seulement promoteur ou signataire.
+
+## POST /offers
+
+Crée une offre pour une entreprise rattachée à l'utilisateur. Un déposant ne peut créer
+une offre que pour une de ses entreprises ; l'administrateur peut créer une offre au nom
+d'une entreprise quelconque.
+
+### Requête
+
+- Header `Authorization` obligatoire
+- Body JSON :
+
+```json
+{
+  "companyId": 4,
+  "depositorContactId": 2,
+  "promoterContactId": null,
+  "academicYearId": 2,
+  "periodId": 5,
+  "title": "Nouvelle offre",
+  "description": "Détails du sujet"
+}
+```
+
+### Réponses
+
+- `201` : offre créée
+- `400` `INVALID_BODY` : donnée obligatoire manquante ou statuts invalides
+- `403` `FORBIDDEN` : rôle insuffisant ou entreprise non autorisée
+- `401` `UNAUTHENTICATED` : session absente ou invalide
+
+## PATCH /offers/:id
+
+Modifie une offre déjà existante. Un déposant ne peut modifier que ses offres en cours de
+rédaction ; un administrateur peut éditer n'importe quelle offre.
+
+### Réponses
+
+- `200` : offre mise à jour
+- `400` `INVALID_BODY` : offre non modifiable
+- `403` `FORBIDDEN` : droit insuffisant
+- `404` `NOT_FOUND` : offre inconnue
+
+## DELETE /offers/:id
+
+Supprime une offre si elle n'est pas liée à un stage et si son statut est encore
+`SUBMITTED` ou `PENDING` pour un déposant. L'administrateur peut supprimer toute offre
+non liée à un stage.
+
+### Réponses
+
+- `204` : suppression effectuée
+- `400` `INVALID_BODY` : l'offre est liée à un stage ou non supprimable
+- `403` `FORBIDDEN` : droit insuffisant
+- `404` `NOT_FOUND` : offre inconnue
+
+## PATCH /offers/:id/status
+
+Met à jour le statut d'une offre selon les règles administratives.
+
+### Requête
+
+```json
+{ "status": "PUBLISHED" }
+```
+
+### Réponses
+
+- `200` : offre avec son nouveau statut
+- `400` `INVALID_BODY` : statut invalide
+- `403` `FORBIDDEN` : l'utilisateur n'est pas administrateur
+- `404` `NOT_FOUND` : offre inconnue

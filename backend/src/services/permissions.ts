@@ -17,3 +17,13 @@ export const hasContactRole = (user: User, role: ContactRole): boolean =>
  */
 export const canListOffers = (user: User): boolean =>
   isAdmin(user) || isStudent(user) || hasContactRole(user, "DEPOSITOR");
+
+/** Un déposant peut créer ou modifier une offre pour une de ses entreprises. */
+export const canManageOffer = (user: User): boolean =>
+  isAdmin(user) || hasContactRole(user, "DEPOSITOR");
+
+/** Un administrateur décide du statut et de la publication des offres. */
+export const canReviewOffers = (user: User): boolean => isAdmin(user);
+
+/** Un étudiant peut postuler à une offre publiée. */
+export const canApplyToOffer = (user: User): boolean => isStudent(user);

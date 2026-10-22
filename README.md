@@ -88,10 +88,10 @@ Les outils ont été choisis pour rester simples et lisibles :
 - Connexion de démonstration, navigation adaptée au profil, déconnexion.
 - **Entreprises** : liste et recherche par nom (`GET /companies`). Un administrateur voit
   toutes les entreprises ; les autres utilisateurs, seulement les entreprises actives.
-- **Offres** : liste en lecture seule (`GET /offers`), filtrée selon le profil :
-  - l'administrateur voit toutes les offres ;
+- **Offres** : cycle complet de gestion selon le profil :
+  - l'administrateur voit toutes les offres et valide, met en attente, publie ou archive ;
+  - le déposant crée, modifie et retire ses offres tant qu'elles ne sont pas publiées ;
   - l'étudiant voit les offres publiées ;
-  - le déposant voit les offres qu'il a déposées ;
   - un contact sans rôle de déposant n'y a pas accès (403).
 - Schéma complet de la base : entreprises, contacts et rôles, étudiants, administrateurs,
   années et périodes, offres, candidatures et stages.
