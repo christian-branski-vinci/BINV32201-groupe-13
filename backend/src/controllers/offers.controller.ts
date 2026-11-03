@@ -2,12 +2,13 @@ import { Router } from "express";
 import { toOfferDto } from "../mappers/offer.mapper.ts";
 import { getCurrentUser } from "../middlewares/authenticate.ts";
 import { authorize } from "../middlewares/authorize.ts";
-import type { OfferStatus } from "../models/offer.ts";
+import type { OfferStatus, PeriodCode } from "../models/offer.ts";
 import type { OffersService } from "../services/offers.service.ts";
 import { canListOffers, canManageOffer, canReviewOffers } from "../services/permissions.ts";
 import { HttpError } from "../utils/httpError.ts";
 
 const OFFER_STATUSES: readonly OfferStatus[] = ["SUBMITTED", "PENDING", "PUBLISHED", "ASSIGNED", "ARCHIVED"];
+const PERIOD_CODES: readonly PeriodCode[] = ["P1", "P2", "OTHER"];
 
 const parsePositiveInt = (value: unknown, field: string): number => {
   if (typeof value !== "number" || !Number.isInteger(value) || value <= 0) {
@@ -26,6 +27,17 @@ const parseOfferStatus = (value: unknown): OfferStatus => {
     throw new HttpError(400, "INVALID_BODY", "Le statut est invalide");
   }
   return value as OfferStatus;
+};
+
+const parsePeriod = (value: unknown): PeriodCode | undefined => {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new HttpError(400, "INVALID_QUERY", "Le paramètre period doit apparaître une seule fois");
+  }
+  if (!PERIOD_CODES.includes(value as PeriodCode)) {
+    throw new HttpError(400, "INVALID_QUERY", "Le paramètre period est invalide");
+  }
+  return value as PeriodCode;
 };
 
 const parseOfferBody = (value: unknown) => {
@@ -63,7 +75,8 @@ export const createOffersRouter = (offersService: OffersService) => {
   const router = Router();
 
   router.get("/", authorize(canListOffers), (req, res) => {
-    res.json(offersService.listOffers(getCurrentUser(req)).map(toOfferDto));
+    const period = parsePeriod(req.query.period);
+    res.json(offersService.listOffers(getCurrentUser(req), period).map(toOfferDto));
   });
 
   router.post("/", authorize(canManageOffer), (req, res) => {

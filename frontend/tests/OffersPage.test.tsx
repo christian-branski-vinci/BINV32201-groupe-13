@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import OffersPage from "../src/pages/OffersPage.tsx";
 import { adminUser, contactUser, stubFetch, studentUser } from "./helpers/fetchMock.ts";
@@ -23,15 +23,35 @@ const offers = [
 ];
 
 describe("OffersPage", () => {
+  it.each([
+    ["Toutes les périodes", "", "/api/offers"],
+    ["P1", "P1", "/api/offers?period=P1"],
+    ["P2", "P2", "/api/offers?period=P2"],
+    ["Autre", "OTHER", "/api/offers?period=OTHER"],
+  ])("appelle l'API avec le filtre %s", async (_label, value, expectedUrl) => {
+    const fetchMock = stubFetch({ "/api/offers": () => Response.json([]) });
+
+    render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
+    await screen.findByText("Aucune offre à afficher.");
+
+    if (value !== "") {
+      fireEvent.change(screen.getByLabelText("Période"), { target: { value } });
+      await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+    }
+
+    expect(fetchMock.mock.calls.map(([input]) => String(input))).toContain(expectedUrl);
+  });
+
   it("affiche les offres avec leurs libellés français", async () => {
     stubFetch({ "/api/offers": () => Response.json(offers) });
 
     render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
 
     expect(await screen.findByText("Refonte du portail client")).toBeInTheDocument();
-    expect(screen.getByText("Soumise")).toBeInTheDocument();
-    expect(screen.getByText("Attribuée")).toBeInTheDocument();
-    expect(screen.getByText("Autre")).toBeInTheDocument();
+    const table = within(screen.getByRole("table"));
+    expect(table.getByText("Soumise")).toBeInTheDocument();
+    expect(table.getByText("Attribuée")).toBeInTheDocument();
+    expect(table.getByText("Autre")).toBeInTheDocument();
     expect(screen.getByText("2 offres")).toBeInTheDocument();
     expect(screen.getByText("Les offres que vous avez déposées.")).toBeInTheDocument();
   });
