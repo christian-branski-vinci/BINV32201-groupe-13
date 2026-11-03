@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import OffersPage from "../src/pages/OffersPage.tsx";
 import { adminUser, contactUser, stubFetch, studentUser } from "./helpers/fetchMock.ts";
@@ -48,9 +48,10 @@ describe("OffersPage", () => {
     render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
 
     expect(await screen.findByText("Refonte du portail client")).toBeInTheDocument();
-    expect(screen.getByText("Soumise")).toBeInTheDocument();
-    expect(screen.getByText("Attribuée")).toBeInTheDocument();
-    expect(screen.getByText("Autre")).toBeInTheDocument();
+    const table = within(screen.getByRole("table"));
+    expect(table.getByText("Soumise")).toBeInTheDocument();
+    expect(table.getByText("Attribuée")).toBeInTheDocument();
+    expect(table.getByText("Autre")).toBeInTheDocument();
     expect(screen.getByText("2 offres")).toBeInTheDocument();
     expect(screen.getByText("Les offres que vous avez déposées.")).toBeInTheDocument();
   });

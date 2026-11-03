@@ -18,26 +18,33 @@ export const useOffers = (
 
   useEffect(() => {
     const controller = new AbortController();
-    setIsLoading(true);
-    setError(null);
 
-    getOffers(token, controller.signal, period)
-      .then((data) => {
-        if (!controller.signal.aborted) setOffers(data);
-      })
-      .catch((reason: unknown) => {
-        if (controller.signal.aborted) return;
-        if (isUnauthorized(reason)) {
-          onUnauthorized();
-        } else {
-          setError(reason instanceof Error ? reason.message : "Erreur inconnue");
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) setIsLoading(false);
-      });
+    const load = () => {
+      setIsLoading(true);
+      setError(null);
+      getOffers(token, controller.signal, period)
+        .then((data) => {
+          if (!controller.signal.aborted) setOffers(data);
+        })
+        .catch((reason: unknown) => {
+          if (controller.signal.aborted) return;
+          if (isUnauthorized(reason)) {
+            onUnauthorized();
+          } else {
+            setError(reason instanceof Error ? reason.message : "Erreur inconnue");
+          }
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setIsLoading(false);
+        });
+    };
 
-    return () => controller.abort();
+    const timeoutId = window.setTimeout(load, 0);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
   }, [token, onUnauthorized, period]);
 
   return { offers, isLoading, error };
