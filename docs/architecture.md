@@ -133,6 +133,13 @@ nouvelles.
 | Page et composants | `frontend/src/pages/OffersPage.tsx`, `OfferTable.tsx` |
 | Tests interface | `frontend/tests/OffersPage.test.tsx`, `NavBar.test.tsx` |
 
+### Candidatures étudiant
+
+Les candidatures suivent les mêmes couches que les offres. `GET /applications` est
+strictement limité à l'étudiant connecté et à l'année académique courante. Une candidature
+retirée reste en base avec le statut `WITHDRAWN`, ce qui permet une nouvelle candidature
+sans perdre l'historique.
+
 ## Tests
 
 - Backend (`backend/tests/`) : Vitest et Supertest sur une base SQLite en mémoire, jamais
