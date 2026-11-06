@@ -74,6 +74,8 @@ Retourne l'utilisateur connecté.
 ### Requête
 
 - Header `Authorization` obligatoire
+- Paramètre facultatif `period` : `P1`, `P2` ou `OTHER`. Il limite les résultats à la
+  période demandée. Son absence retourne toutes les offres normalement visibles.
 
 ### Réponses
 
@@ -168,6 +170,7 @@ récente à la plus ancienne, puis de la plus récente à la plus ancienne.
 
 - `401` `UNAUTHENTICATED` : session absente ou invalide.
 - `403` `FORBIDDEN` : contact seulement promoteur ou signataire.
+- `400` `INVALID_QUERY` : `period` est invalide ou apparaît plusieurs fois.
 
 ## POST /offers
 

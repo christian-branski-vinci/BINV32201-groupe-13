@@ -1,10 +1,11 @@
+import { useState } from "react";
 import EmptyState from "../components/EmptyState.tsx";
 import ErrorState from "../components/ErrorState.tsx";
 import LoadingState from "../components/LoadingState.tsx";
 import OfferTable from "../components/OfferTable.tsx";
 import { useOffers } from "../hooks/useOffers.ts";
+import type { PeriodCode } from "../models/offer.ts";
 import type { User } from "../models/user.ts";
-import { useState } from "react";
 import { createApplication } from "../services/applications.service.ts";
 import { isUnauthorized } from "../utils/api.ts";
 import type { Offer } from "../models/offer.ts";
@@ -21,8 +22,16 @@ const DESCRIPTIONS = {
   CONTACT: "Les offres que vous avez déposées.",
 } as const;
 
+const PERIOD_OPTIONS: { value: PeriodCode | ""; label: string }[] = [
+  { value: "", label: "Toutes les périodes" },
+  { value: "P1", label: "P1" },
+  { value: "P2", label: "P2" },
+  { value: "OTHER", label: "Autre" },
+];
+
 const OffersPage = ({ user, token, onUnauthorized }: OffersPageProps) => {
-  const { offers, isLoading, error } = useOffers(token, onUnauthorized);
+  const [period, setPeriod] = useState<PeriodCode | "">("");
+  const { offers, isLoading, error } = useOffers(token, onUnauthorized, period || undefined);
   const [selectedOffer, setSelectedOffer] = useState<Offer | null>(null);
   const [message, setMessage] = useState("");
   const [applicationError, setApplicationError] = useState<string | null>(null);
@@ -63,6 +72,16 @@ const OffersPage = ({ user, token, onUnauthorized }: OffersPageProps) => {
     <section>
       <h1>Offres de stage</h1>
       <p>{DESCRIPTIONS[user.kind]}</p>
+      <label>
+        Période
+        <select value={period} onChange={(event) => setPeriod(event.target.value as PeriodCode | "")}>
+          {PERIOD_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
       {selectedOffer && (
         <form onSubmit={submitApplication}>
           <h2>Candidater à « {selectedOffer.title} »</h2>
