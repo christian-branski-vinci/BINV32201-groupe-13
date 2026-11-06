@@ -13,11 +13,15 @@ import { createUsersRepository } from "./repositories/users.repository.ts";
 import { createAuthService } from "./services/auth.service.ts";
 import { createCompaniesService } from "./services/companies.service.ts";
 import { createOffersService } from "./services/offers.service.ts";
+import { createApplicationsRouter } from "./controllers/applications.controller.ts";
+import { createApplicationsRepository } from "./repositories/applications.repository.ts";
+import { createApplicationsService } from "./services/applications.service.ts";
 
 export const createApp = (db: Db, authConfig: AuthConfig) => {
   const authService = createAuthService(createUsersRepository(db), authConfig.jwtSecret);
   const companiesService = createCompaniesService(createCompaniesRepository(db));
   const offersService = createOffersService(createOffersRepository(db));
+  const applicationsService = createApplicationsService(createApplicationsRepository(db));
   const authenticate = createAuthenticate(authService);
 
   const app = express();
@@ -31,6 +35,7 @@ export const createApp = (db: Db, authConfig: AuthConfig) => {
   // Routes protégées : l'utilisateur est identifié avant d'atteindre le contrôleur.
   app.use("/companies", authenticate, createCompaniesRouter(companiesService));
   app.use("/offers", authenticate, createOffersRouter(offersService));
+  app.use("/applications", authenticate, createApplicationsRouter(applicationsService));
 
   app.use(notFoundHandler);
   app.use(errorHandler);

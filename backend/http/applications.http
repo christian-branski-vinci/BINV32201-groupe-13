@@ -1,0 +1,19 @@
+@studentToken = {{studentToken}}
+
+### Mes candidatures
+GET http://localhost:3000/applications
+Authorization: {{studentToken}}
+
+### Candidater
+POST http://localhost:3000/applications
+Authorization: {{studentToken}}
+Content-Type: application/json
+
+{
+  "offerId": 7,
+  "message": "Le sujet m'intéresse."
+}
+
+### Retirer une candidature
+DELETE http://localhost:3000/applications/1
+Authorization: {{studentToken}}
