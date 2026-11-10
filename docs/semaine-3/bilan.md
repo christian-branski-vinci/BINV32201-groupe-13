@@ -127,7 +127,91 @@ Des vérifications manuelles ont aussi été effectuées pour s’assurer que le
 - Aucun test frontend pour le bouton « Candidater », le formulaire, la page « Mes candidatures » et les libellés de statut.
 - Les tests ajoutés n'ont pas été vérifiés en introduisant volontairement un défaut dans le code.
 
-[COLLER ICI la section « Audit des guides à la lumière de Web 2 », avec ses sous-sections, fournie dans le message précédent. Elle commence par `## Audit des guides à la lumière de Web 2`.]
+## Audit des guides à la lumière de Web 2
+
+### Périmètre et méthode
+
+- **Guides examinés** : `.github/copilot-instructions.md` (seul fichier de consignes destiné à l'agent), `README.md`, `docs/architecture.md` et `.github/pull_request_template.md`. Il n'existe ni `AGENTS.md`, ni `CLAUDE.md`, ni fichier `.instructions.md`. `.vscode/settings.json` règle les permissions de l'agent : c'est un contrôle, pas un guide, il n'est donc pas audité ici.
+- **Références Web 2** : les 20 fiches théoriques fournies (séances 1 à 9, 11 à 20 et 22). Les séances 10 et 21, les exercices et les énoncés ne sont pas disponibles.
+- **Méthode** : relevé des attentes avec l'aide de Copilot, puis recoupement des citations avec les fichiers. Chaque attente est classée (A) si elle est formulée dans le texte de la fiche, ou (B) si elle n'apparaît que dans un exemple de code. Une pratique (B) est « illustrée dans le cours », pas « exigée ».
+- **Ce qui a été vérifié dans le code** : uniquement les points signalés « vérifié » ci-dessous. Aucun guide n'a été modifié.
+
+### Tableau de correspondance
+
+| Attente de Web 2 (source) | Guide examiné (fichier et passage) | Correspondance | Écart ou ajout proposé |
+|---|---|---|---|
+| (A) Le serveur gère « la logique métier, les données et la sécurité » (`06-client_serveur.md`, Résumé) | `copilot-instructions.md` : « services contain business rules », « repositories contain SQL » | Oui | — |
+| (A) Le client gère « l'interface utilisateur et les interactions » (`06`, Résumé) | `copilot-instructions.md` : « `frontend/` is a React/Vite application. » | Partielle | Préciser le rôle du client (interface, interactions), et pas seulement la technologie. |
+| (B) Controller → Service → DB (`03-middleware.md`, « Rappels web1 ») ; « Trois niveaux : application, router (controller), route. » (`03`, Résumé) | `architecture.md` : « controllers → services → repositories → SQLite » | Partielle | Le guide ajoute `repositories`, `mappers`, DBO et DTO, qui sont absents de Web 2. Les signaler comme extensions du projet. Les trois niveaux de middleware ne sont pas mentionnés. |
+| (A) Un middleware est une « brique de traitement entre `req` et `res` » ; middleware d'erreur (`03`) | `architecture.md` : « middlewares (authenticate, authorize, errorHandler) » ; `copilot-instructions.md` : « `errorHandler` converts thrown `HttpError` instances to the stable JSON shape » | Oui | — |
+| (A) « Un composant = Un module. » (`09-modules_collections.md`, Modules) | Aucun passage | Non | Ajouter : un composant par fichier, props typées. Priorité faible. |
+| Aucune attente « MVVM » trouvée dans les fiches | `copilot-instructions.md` : « the course's MVVM structure » ; `architecture.md` : « Le frontend suit le modèle MVVM du cours. » | Source non retrouvée | Les fiches montrent `fetch` dans `useEffect` d'un composant, pas `pages → hooks → services`. Vérifier sur Moodle (séances 10 et 21 absentes) ou retirer « du cours ». |
+| (A) « Il est obligatoire d'annoter explicitement le type » pour les paramètres et les retours de fonctions (`02-typescript.md`, TypeScript : les types) | Aucun passage (seule consigne TypeScript : les imports se terminent par `.ts`) | Non | Ajouter la règle au guide, ou une règle de lint. Les règles explicitement configurées (`no-explicit-any`, `no-unused-vars`, `eqeqeq`) ne l'imposent pas. |
+| (A) « Les interfaces permettent de définir des types complexes. » (`02`) | `copilot-instructions.md` : « `models/` defining DBO/domain/DTO types » | Partielle | Les types sont demandés, pas spécifiquement les interfaces. Priorité faible. |
+| (A) Ressources identifiées par des URLs, au pluriel ; méthodes HTTP selon l'opération (`04-REST.md`) | `copilot-instructions.md` : « Keep the API contract and REST Client examples synchronized with endpoint changes » | Partielle | Les conventions de nommage et d'usage des méthodes ne sont pas écrites. |
+| (A) Paramètres de chemin et de requête (`04`) | `architecture.md` : « `GET /companies?q=` » | Partielle | Illustré par un exemple, pas formulé comme règle. |
+| (A) Codes 400, 401, 403, 404, 409, 500 selon le résultat ; (B) 400, 409, 201 dans les routes (`04`, Codes d'erreur ; `19-json-web-tokens.md`, Routes) | `pull_request_template.md` : « cas d'erreur (400, 401, 403, 404…) » ; `architecture.md` : `authenticate` (401), `authorize` (403) | Partielle | Aucun guide ne dit quand utiliser chaque code, ni 409 pour un conflit. **Vérifié dans le code** : `applications.service.ts` (lignes 25 à 43) renvoie 400 pour le doublon actif, et aucun `HttpError(409` n'existe dans le backend. |
+| (A) `express.json()` pour parser le JSON (`05-serialisation.md`) | Aucun passage | Non | Détail technique, priorité faible. |
+| (B) Corps reçu comme `unknown`, vérifié par un type guard (`19`, Routes) | `README.md` : « Validation par type guards écrits à la main \| Pratique du cours » ; `architecture.md` : « validation des paramètres et du corps » | Oui | — |
+| (A) « Tout le monde peut envoyer des requêtes au backend, pas seulement le frontend ! » et « Certaines requêtes doivent être restreintes à certains utilisateurs » (`19`, Authentification backend) | `copilot-instructions.md` : « Keep authorization and visibility rules in backend services/permission helpers. Do not rely on hiding controls in the frontend. » | Oui | — |
+| (A) Pas de données sensibles dans le payload JWT (`19`) | `copilot-instructions.md` : « The token carries only `kind` and `id`. » | Oui | — |
+| (A) Le backend vérifie la signature à chaque requête ; (B) 401 si le token est absent ou invalide, 403 sans droits (`19`) | `architecture.md` : « `authenticate` vérifie le jeton, puis relit en base », « Absent, invalide ou compte inactif : 401 », « `authorize(règle)` refuse la requête avec un 403 » | Oui | — |
+| (A) « Valeur à garder secrète, ne pas partager sur git ! » (commentaire du bloc Configuration, `19`) | `README.md` : « `npm run setup` crée `backend/.env` (avec une clé de signature aléatoire) » | Partielle | La règle de ne pas versionner le secret n'est pas écrite. |
+| (B) Durée de validité du JWT (`19`, Configuration) | Aucun passage | Non | Ajouter une ligne sur la durée de vie du jeton. |
+| (A) Hachage salé des mots de passe, (B) `bcrypt.compare` (`20-chiffrement-mots-de-passe.md`) | `README.md` : « sans mot de passe » | Sans objet | Le mode démo n'a pas de mots de passe. Si une vraie authentification est ajoutée, exiger bcrypt. |
+| (A) Le JWT est envoyé dans le header d'autorisation (`22-session-web-storage.md`) | `architecture.md` : « Le frontend l'envoie dans l'en-tête `Authorization` de chaque requête. » ; « sans préfixe `Bearer` » | Oui | — |
+| (A) Différence entre `localStorage` et `sessionStorage` ; (B) token en `localStorage`, supprimé au logout (`22`) | `architecture.md` : « stockage du jeton » | Partielle | Le choix de `localStorage` n'est pas écrit. **Vérifié** : `utils/storage.ts` l'utilise, avec le commentaire « comme dans le cours ». |
+| (A) Composants réutilisables (`08-react_vite.md`) | `architecture.md` : « Composants réutilisables, sans connaissance des routes » | Oui | — |
+| (A) Clé `key` dans les listes (`09`) ; `preventDefault`, composants contrôlés (`12-formulaires.md`) ; gestionnaires d'événements (`11-evenements-etat.md`) | Aucun passage | Non | Ajouter quelques lignes de conventions React. Priorité faible. |
+| (A) État partagé par les props ; React Context quand les props deviennent « fastidieux » (`13-etat-partage.md`) ; routes imbriquées sans props, `useOutletContext` (`15-etat-par-contexte.md`) | `architecture.md` : « Le jeton et la fonction de déconnexion sont transmis aux pages par les props. » | Partielle | Le guide retient les props et ne parle pas de Context. Cohérent avec les routes plates utilisées (`App.tsx`). Préciser quand passer au Context. |
+| (A) React Router : chemin et composant, `Link`, `useNavigate`, routes imbriquées et `Outlet` (`14-router.md`) | `README.md` : « React Router, CSS simple » ; `architecture.md` : « Une page par route » | Partielle | `Link`, `useNavigate` et `Outlet` ne sont pas mentionnés. |
+| (A) `fetch` dans un gestionnaire d'événement ou `useEffect`, pas dans le corps du composant (`16-fetch-promesses-useeffect.md`) | `architecture.md` : `services/` « Appels HTTP ; vérifient le statut et valident le JSON avec un type guard » | Partielle | L'endroit d'appel de `fetch` n'est pas dit. Les appels sont centralisés dans `services/`. |
+| (B) Vérifier `response.ok` après un `fetch` (`16`) | `architecture.md` : les services « vérifient le statut » | Oui | — |
+| (A) Dépendances de `useEffect` et fonction de nettoyage (`16`, Fonctionnement) | `architecture.md` : « `useCompanies.ts` (délai de frappe, annulation) » | Partielle | Le nettoyage est illustré par un exemple, pas formulé. Les dépendances sont contrôlées par le lint (`react/exhaustive-deps`, `frontend/.oxlintrc.json`), pas par un guide. |
+| (A) Un proxy Vite transmet `/api` ; (B) `rewrite` retire `/api` (`18-single-origin-policy-proxy.md`) | `copilot-instructions.md` : « Vite serves it on port 5173 and proxies `/api/...` to the backend on port 3000 while removing the `/api` prefix. » | Oui | **Vérifié** dans `frontend/vite.config.ts`. |
+| (A) CORS comme alternative au proxy (`18`) | Aucun passage | Sans objet | Le projet a choisi le proxy, l'une des deux solutions du cours. |
+
+### Ce qui correspond
+
+L'architecture serveur et le rôle des middlewares, la validation par type guards, le contrôle des droits côté backend, le contenu minimal du jeton, les codes 401 et 403, l'en-tête `Authorization`, la vérification du statut des appels HTTP et le proxy Vite sont cohérents avec Web 2. Aucune contradiction directe n'a été trouvée. L'écart le plus net est volontaire : la connexion de démonstration n'a pas de mot de passe, alors que Web 2 enseigne `/login` avec identifiants. Le `README` l'annonce : « Ce n'est **pas** une authentification ».
+
+### Ce qui manque ou ne correspond pas
+
+- **Codes de statut.** Les guides ne disent pas quand utiliser chaque code. Le code renvoie 400 pour un doublon, là où Web 2 (`04-REST.md`) donne 409 pour une ressource déjà existante.
+- **Annotation des types.** L'obligation de Web 2 n'est ni dans un guide ni dans une règle de lint.
+- **Origine de MVVM.** Le guide l'attribue au cours, mais aucune fiche fournie n'en parle.
+- **React.** `fetch`, `useEffect` (dépendances, nettoyage), formulaires, clés de liste et routage sont peu ou pas décrits.
+- **Secret et durée du JWT.** Ni la consigne de ne pas versionner le secret ni la durée de vie du jeton ne sont écrites.
+
+### Un guide qui n'est plus à jour
+
+Le commit de la semaine 1 (`78be497`) a réécrit le `README` : « Offres : cycle complet de gestion selon le profil ». Pourtant la section « Ce qui n'est pas implémenté » liste toujours la création d'une offre par un déposant, la validation par un administrateur et « recherche et filtrage des offres (année, période, statut…) ». Le filtre par période existe, mais le mot « période » ne figure nulle part dans le `README`. Un guide lu par l'agent peut donc l'induire en erreur, et aucun contrôle ne le détecte.
+
+### Écart entre le code et les guides
+
+Les guides décrivent `pages → hooks → services`. **Vérifié** : `OffersPage.tsx` importe `createApplication` directement depuis le service et gère l'état d'envoi dans la page. Ce n'est pas un écart avec Web 2, mais avec le guide du projet.
+
+### Instruction ou contrôle ?
+
+Peu de règles de Web 2 reprises par les guides sont contrôlées par un outil. `tsc` en mode strict, `no-explicit-any` et `react/exhaustive-deps` en font partie, ainsi que `errorHandler` à l'exécution. Le découpage en couches, l'usage des codes de statut, la vérification du statut des appels `fetch` et les conventions React restent de simples instructions.
+
+### Recommandations
+
+1. **Codes de statut** : ajouter à `copilot-instructions.md` une règle (400 entrée invalide, 404 introuvable, 409 conflit). Justification : `04-REST.md` ; le code renvoie 400 pour un doublon. Les tests attendent actuellement 400, donc la changer pour le code existant demande de mettre à jour l'API et les tests.
+2. **Types explicites** : écrire la règle d'annotation de `02-typescript.md` dans le guide, ou ajouter une règle de lint équivalente (à vérifier dans Oxlint). Cela la transformerait en contrôle.
+3. **Couches frontend** : ajouter « les pages n'appellent pas les services directement, elles passent par un hook », et préciser où appeler `fetch`. Justification : `16-fetch-promesses-useeffect.md` et l'écart de `OffersPage.tsx`.
+4. **MVVM** : retrouver la source dans le cours ou retirer « du cours » des deux guides.
+5. **README** : le remettre à jour et ajouter à la checklist de PR « le README reflète les fonctionnalités réellement présentes ».
+6. **JWT** : écrire que le secret n'est jamais versionné et préciser la durée de vie du jeton (`19-json-web-tokens.md`).
+7. **Priorité faible** : conventions React (clés de liste, formulaires contrôlés, `preventDefault`), Link/useNavigate/Outlet, quand utiliser le Context.
+
+### Consignes des guides sans équivalent dans les fiches
+
+Ces éléments ne sont pas rattachés à Web 2 : tests (Vitest, Supertest, Testing Library), `npm run check`, lint Oxlint, migrations SQL, architecture `repositories` et `mappers`, synchronisation de `backend/API.md` et des fichiers `.http`, utilisation de `API_PORT`, checklist de PR et suivi des séances.
+
+### Limites de l'analyse
+
+- Seuls quatre fichiers de consignes ont été audités. `docs/seed.md` et `backend/API.md` ne l'ont pas été.
 
 ## Senseur d'architecture proposé (non implémenté)
 
