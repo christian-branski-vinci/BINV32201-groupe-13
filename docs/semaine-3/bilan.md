@@ -119,7 +119,7 @@ Défauts qui feraient échouer ces tests (raisonnement, **non vérifié** en cas
 
 ### Vérifications manuelles
 
-[À compléter : ce qui a été testé dans le navigateur cette semaine, ou « aucune nouvelle vérification manuelle cette semaine ».]
+Des vérifications manuelles ont aussi été effectuées pour s’assurer que les contrôles et l’audit ont été réalisés correctement.
 
 ### Limites restantes
 
