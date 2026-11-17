@@ -147,10 +147,20 @@ récente à la plus ancienne, puis de la plus récente à la plus ancienne.
 ### Requête
 
 - Header `Authorization` obligatoire
+- Paramètres de requête facultatifs, combinables :
+  - `period` : `P1`, `P2` ou `OTHER`, pour ne garder que les offres de cette période ;
+  - `q` : texte cherché dans le titre de l'offre, sans distinguer les majuscules et les
+    minuscules. Les espaces au début et à la fin sont ignorés ; une valeur vide équivaut à
+    l'absence de recherche. Plusieurs mots forment une seule expression à retrouver telle
+    quelle. Les caractères `%` et `_` sont cherchés comme du texte. La recherche ne porte
+    que sur le titre et respecte la visibilité du profil (un étudiant ne trouve que des
+    offres publiées).
+
+Exemple : `GET /offers?q=application&period=P2`
 
 ### Réponses
 
-- `200` : tableau d'offres
+- `200` : tableau d'offres, vide si aucun titre ne correspond
 
 ```json
 [
@@ -170,7 +180,8 @@ récente à la plus ancienne, puis de la plus récente à la plus ancienne.
 
 - `401` `UNAUTHENTICATED` : session absente ou invalide.
 - `403` `FORBIDDEN` : contact seulement promoteur ou signataire.
-- `400` `INVALID_QUERY` : `period` est invalide ou apparaît plusieurs fois.
+- `400` `INVALID_QUERY` : `period` est invalide ou apparaît plusieurs fois, ou `q` apparaît
+  plusieurs fois.
 
 ## POST /offers
 

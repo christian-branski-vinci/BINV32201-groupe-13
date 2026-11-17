@@ -34,6 +34,22 @@ Authorization: {{admin.response.body.token}}
 GET http://localhost:3000/offers?period=P1
 Authorization: {{admin.response.body.token}}
 
+### Recherche par titre vue par l'administrateur (casse ignorée)
+GET http://localhost:3000/offers?q=application
+Authorization: {{admin.response.body.token}}
+
+### Recherche combinée à la période, vue par l'étudiant (offres publiées seulement)
+GET http://localhost:3000/offers?q=application&period=P2
+Authorization: {{student.response.body.token}}
+
+### Recherche avec espaces autour du texte (ignorés)
+GET http://localhost:3000/offers?q=%20%20facturation%20%20
+Authorization: {{admin.response.body.token}}
+
+### Erreur 400 : paramètre q répété
+GET http://localhost:3000/offers?q=application&q=react
+Authorization: {{admin.response.body.token}}
+
 ### Offres vues par l'étudiant
 GET http://localhost:3000/offers
 Authorization: {{student.response.body.token}}
