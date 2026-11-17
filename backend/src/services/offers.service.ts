@@ -29,8 +29,8 @@ const validateOfferInput = (viewer: User, input: OfferInput): void => {
 };
 
 export const createOffersService = (repository: OffersRepository) => ({
-  listOffers: (viewer: User, period?: PeriodCode): Offer[] =>
-    repository.findAll({ ...visibilityFilter(viewer), period }).map(toOffer),
+  listOffers: (viewer: User, period?: PeriodCode, search?: string): Offer[] =>
+    repository.findAll({ ...visibilityFilter(viewer), period, search }).map(toOffer),
 
   createOffer: (viewer: User, input: OfferInput): Offer => {
     validateOfferInput(viewer, input);
