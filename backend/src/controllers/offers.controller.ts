@@ -40,6 +40,15 @@ const parsePeriod = (value: unknown): PeriodCode | undefined => {
   return value as PeriodCode;
 };
 
+const parseSearch = (value: unknown): string | undefined => {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new HttpError(400, "INVALID_QUERY", "Le paramètre q doit apparaître une seule fois");
+  }
+  const search = value.trim();
+  return search === "" ? undefined : search;
+};
+
 const parseOfferBody = (value: unknown) => {
   if (typeof value !== "object" || value === null) {
     throw new HttpError(400, "INVALID_BODY", "Le corps doit être un objet JSON");
@@ -76,7 +85,8 @@ export const createOffersRouter = (offersService: OffersService) => {
 
   router.get("/", authorize(canListOffers), (req, res) => {
     const period = parsePeriod(req.query.period);
-    res.json(offersService.listOffers(getCurrentUser(req), period).map(toOfferDto));
+    const search = parseSearch(req.query.q);
+    res.json(offersService.listOffers(getCurrentUser(req), period, search).map(toOfferDto));
   });
 
   router.post("/", authorize(canManageOffer), (req, res) => {

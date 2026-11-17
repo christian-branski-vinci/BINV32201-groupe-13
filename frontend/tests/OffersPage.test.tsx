@@ -86,4 +86,86 @@ describe("OffersPage", () => {
 
     await waitFor(() => expect(onUnauthorized).toHaveBeenCalled());
   });
+
+  it("recherche une sous-chaîne dans le titre en ignorant les espaces extérieurs", async () => {
+    const fetchMock = stubFetch({ "/api/offers": () => Response.json(offers) });
+
+    render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
+    await screen.findByText("Refonte du portail client");
+
+    fireEvent.change(screen.getByLabelText("Rechercher par titre"), {
+      target: { value: "  portail  " },
+    });
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenCalled();
+      const urls = fetchMock.mock.calls.map(([input]) => String(input));
+      expect(urls).toContain("/api/offers?q=portail");
+    });
+  });
+
+  it("combine la recherche avec le filtre de période", async () => {
+    const fetchMock = stubFetch({ "/api/offers": () => Response.json(offers) });
+
+    render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
+    await screen.findByText("Refonte du portail client");
+
+    fireEvent.change(screen.getByLabelText("Période"), { target: { value: "P2" } });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    fireEvent.change(screen.getByLabelText("Rechercher par titre"), {
+      target: { value: "portail" },
+    });
+
+    await waitFor(() => {
+      const urls = fetchMock.mock.calls.map(([input]) => String(input));
+      const matchingUrl = urls.find((url) => url.includes("q=portail"));
+      expect(matchingUrl).toBeDefined();
+      const url = new URL(matchingUrl!, "http://localhost");
+      expect(url.searchParams.get("period")).toBe("P2");
+      expect(url.searchParams.get("q")).toBe("portail");
+    });
+  });
+
+  it("supprime la recherche vide et revient aux offres normalement accessibles", async () => {
+    const fetchMock = stubFetch({ "/api/offers": () => Response.json(offers) });
+
+    render(<OffersPage user={contactUser} token="jeton" onUnauthorized={vi.fn()} />);
+    await screen.findByText("Refonte du portail client");
+
+    fireEvent.change(screen.getByLabelText("Rechercher par titre"), {
+      target: { value: "portail" },
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        "/api/offers?q=portail",
+        expect.anything(),
+      );
+    });
+
+    fireEvent.change(screen.getByLabelText("Rechercher par titre"), {
+      target: { value: "   " },
+    });
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenLastCalledWith(
+        "/api/offers",
+        expect.anything(),
+      );
+    });
+  });
+
+  it("affiche un message adapté lorsqu'aucune offre ne correspond", async () => {
+    stubFetch({ "/api/offers": () => Response.json([]) });
+
+    render(<OffersPage user={studentUser} token="jeton" onUnauthorized={vi.fn()} />);
+    await screen.findByText("Aucune offre à afficher.");
+
+    fireEvent.change(screen.getByLabelText("Rechercher par titre"), {
+      target: { value: "introuvable" },
+    });
+
+    expect(
+      await screen.findByText("Aucune offre ne correspond à la recherche."),
+    ).toBeInTheDocument();
+  });
 });

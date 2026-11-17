@@ -16,6 +16,9 @@ const listOffersAs = (kind: UserKind, id: number) =>
 const listOffersAsWithPeriod = (kind: UserKind, id: number, period: string) =>
   request(app).get(`/offers?period=${period}`).set("Authorization", tokenFor(kind, id));
 
+const listOffersAsWithQuery = (kind: UserKind, id: number, query: string) =>
+  request(app).get(`/offers${query}`).set("Authorization", tokenFor(kind, id));
+
 const offerIds = (body: { id: number }[]): number[] => body.map((offer) => offer.id);
 
 describe("GET /offers : accès", () => {
@@ -161,6 +164,134 @@ describe("GET /offers : visibilité selon le profil", () => {
 
     expect(response.status).toBe(403);
     expect(response.body.error.code).toBe("FORBIDDEN");
+  });
+});
+
+describe("GET /offers : recherche EF-30 par titre", () => {
+  it("recherche une sous-chaîne sans distinguer la casse", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      "?q=rEaCt",
+    );
+
+    expect(response.status).toBe(200);
+    expect(offerIds(response.body)).toEqual([OFFER.FLEET_APP]);
+  });
+
+  it("ignore les espaces au début et à la fin du texte saisi", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("  facturation  ")}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(offerIds(response.body)).toEqual([OFFER.BILLING_API]);
+  });
+
+  it("cherche plusieurs mots comme une expression entière", async () => {
+    const exact = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("application React")}`,
+    );
+    const reversed = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("React application")}`,
+    );
+
+    expect(exact.status).toBe(200);
+    expect(offerIds(exact.body)).toEqual([OFFER.FLEET_APP]);
+    expect(reversed.status).toBe(200);
+    expect(reversed.body).toEqual([]);
+  });
+
+  it("traite une recherche vide comme une absence de recherche", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("   ")}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveLength(10);
+  });
+
+  it("renvoie une liste vide lorsqu'aucun titre ne correspond", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("aucune offre avec ce texte")}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it("limite la recherche au titre des offres", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("factures")}`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it("combine la recherche avec le filtre de période", async () => {
+    const matchingPeriod = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("tests")}&period=OTHER`,
+    );
+    const excludedPeriod = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      `?q=${encodeURIComponent("tests")}&period=P2`,
+    );
+
+    expect(matchingPeriod.status).toBe(200);
+    expect(offerIds(matchingPeriod.body)).toEqual([OFFER.E2E_TESTS]);
+    expect(excludedPeriod.status).toBe(200);
+    expect(excludedPeriod.body).toEqual([]);
+  });
+
+  it("combine la recherche avec la visibilité publiée d'un étudiant", async () => {
+    const response = await listOffersAsWithQuery(
+      "STUDENT",
+      STUDENT.LUCAS_DUPONT,
+      `?q=${encodeURIComponent("application")}&period=P2`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(offerIds(response.body)).toEqual([OFFER.FLEET_APP]);
+    expect(response.body.every((offer: { status: string }) => offer.status === "PUBLISHED")).toBe(true);
+  });
+
+  it("traite le caractère % comme du texte littéral", async () => {
+    const response = await listOffersAsWithQuery(
+      "ADMIN",
+      ADMINISTRATOR.ANNE_LECLERCQ,
+      "?q=%25",
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual([]);
+  });
+
+  it("refuse un paramètre q répété", async () => {
+    const response = await request(app)
+      .get("/offers?q=application&q=react")
+      .set("Authorization", tokenFor("ADMIN", ADMINISTRATOR.ANNE_LECLERCQ));
+
+    expect(response.status).toBe(400);
+    expect(response.body.error).toEqual({
+      code: "INVALID_QUERY",
+      message: "Le paramètre q doit apparaître une seule fois",
+    });
   });
 });
 

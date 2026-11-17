@@ -92,6 +92,7 @@ Les outils ont été choisis pour rester simples et lisibles :
   - l'administrateur voit toutes les offres et valide, met en attente, publie ou archive ;
   - le déposant crée, modifie et retire ses offres tant qu'elles ne sont pas publiées ;
   - l'étudiant voit les offres publiées ;
+  - la liste se filtre par période et se recherche par titre (`GET /offers?q=`) ;
   - un contact sans rôle de déposant n'y a pas accès (403).
 - Schéma complet de la base : entreprises, contacts et rôles, étudiants, administrateurs,
   années et périodes, offres, candidatures et stages.
@@ -103,7 +104,7 @@ Ces fonctionnalités du cahier des charges n'existent pas encore, ni dans l'API 
 l'interface :
 
 - création d'une offre par un déposant, modification ou retrait ;
-- recherche et filtrage des offres (année, période, statut…) ;
+- filtrage des offres par année, statut, entreprise et localité, et recherche hors du titre ;
 - validation, mise en attente, publication ou archivage d'une offre par un administrateur ;
 - sélection d'un candidat et création du stage ;
 - déclaration d'un stage par un étudiant et validation par un administrateur ;

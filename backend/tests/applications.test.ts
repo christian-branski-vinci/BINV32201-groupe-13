@@ -1,6 +1,6 @@
 import request from "supertest";
 import { beforeEach, describe, expect, it } from "vitest";
-import { APPLICATION, OFFER, STUDENT } from "../src/db/seed/seedIds.ts";
+import { ADMINISTRATOR, APPLICATION, OFFER, STUDENT } from "../src/db/seed/seedIds.ts";
 import { createTestDatabase } from "./helpers/testDatabase.ts";
 import { createTestApp, tokenFor } from "./helpers/testApp.ts";
 
@@ -11,8 +11,36 @@ beforeEach(() => {
 });
 
 const studentToken = (id: number) => tokenFor("STUDENT", id);
+const adminToken = () => tokenFor("ADMIN", ADMINISTRATOR.ANNE_LECLERCQ);
+
+const withSession = (route: request.Test, authorization?: string): request.Test =>
+  authorization === undefined ? route : route.set("Authorization", authorization);
+
+const applicationRoutes: [string, (authorization?: string) => request.Test][] = [
+  ["GET", (authorization) => withSession(request(app).get("/applications"), authorization)],
+  ["POST", (authorization) => withSession(request(app).post("/applications"), authorization)],
+  [
+    "DELETE",
+    (authorization) =>
+      withSession(request(app).delete(`/applications/${APPLICATION.LUCAS_FLEET_APP}`), authorization),
+  ],
+];
 
 describe("candidatures étudiant", () => {
+  it.each(applicationRoutes)("refuse une requête %s sans session", async (_method, send) => {
+    const response = await send();
+
+    expect(response.status).toBe(401);
+    expect(response.body.error.code).toBe("UNAUTHENTICATED");
+  });
+
+  it.each(applicationRoutes)("refuse une requête %s à un administrateur", async (_method, send) => {
+    const response = await send(adminToken());
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe("FORBIDDEN");
+  });
+
   it("liste uniquement les candidatures de l'étudiant connecté", async () => {
     const response = await request(app)
       .get("/applications")

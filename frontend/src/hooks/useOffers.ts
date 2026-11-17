@@ -11,6 +11,7 @@ export const useOffers = (
   token: string,
   onUnauthorized: () => void,
   period?: PeriodCode,
+  search?: string,
 ) => {
   const [offers, setOffers] = useState<Offer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -22,7 +23,7 @@ export const useOffers = (
     const load = () => {
       setIsLoading(true);
       setError(null);
-      getOffers(token, controller.signal, period)
+      getOffers(token, controller.signal, period, search)
         .then((data) => {
           if (!controller.signal.aborted) setOffers(data);
         })
@@ -39,13 +40,13 @@ export const useOffers = (
         });
     };
 
-    const timeoutId = window.setTimeout(load, 0);
+    const timeoutId = window.setTimeout(load, search === undefined ? 0 : 300);
 
     return () => {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [token, onUnauthorized, period]);
+  }, [token, onUnauthorized, period, search]);
 
   return { offers, isLoading, error };
 };
