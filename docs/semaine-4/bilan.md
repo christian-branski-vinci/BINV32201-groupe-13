@@ -50,7 +50,7 @@ Le code d'erreur `UNAUTHENTICATED` vient de `backend/API.md` (Copilot avait d'ab
 - Seul l'administrateur est testé pour le 403 : un contact (par exemple le déposant `CONTACT.MARC_LEJEUNE`) ne l'est pas.
 - Aucun test avec un jeton invalide ou expiré.
 - Le `POST` est envoyé sans corps valide, et le `DELETE` ne relit pas la candidature pour vérifier qu'elle n'a pas changé.
-- La route est protégée deux fois : `studentOnly` dans le contrôleur et `requireStudent` dans le service (`applications.service.ts:11`). Retirer seulement `studentOnly` renverrait toujours 403 `FORBIDDEN` via le service, et ces tests ne le détecteraient pas.
+- La route est protégée deux fois : `studentOnly` dans le contrôleur et `requireStudent` dans le service (`applications.service.ts:11`). Pour `GET` et `DELETE`, retirer seulement `studentOnly` renverrait toujours 403 `FORBIDDEN` via le service, et ces tests ne le détecteraient pas. Pour `POST`, envoyé sans corps valide, la requête échouerait en 400 avant d'atteindre le service : le test détecterait le retrait, mais pour une raison qui n'est pas celle qu'il prétend vérifier.
 
 **Défauts qui feraient échouer ces tests** (raisonnement, **non vérifié** en cassant volontairement le code) : retrait de `authenticate` au montage de `/applications` dans `app.ts` (tests 401), retrait des deux garde-fous `studentOnly` et `requireStudent` (tests 403).
 
